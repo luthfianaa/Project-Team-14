@@ -1,2 +1,2 @@
-# Project-Team-14
+# Sistem Donasi WeCan
 Project Team Programa Komputer Kelompok 14
