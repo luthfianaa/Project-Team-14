@@ -26,6 +26,10 @@ def show_fundraising_page(window):
     tk.Label(window, text="Judul Kampanye:").pack()
     title_entry = tk.Entry(window)
     title_entry.pack()
+
+    tk.Label(window, text="Keterangan Kampanye:").pack()
+    description_entry = tk.Entry(window)
+    description_entry.pack()
     
     tk.Label(window, text="Target Donasi:").pack()
     target_entry = tk.Entry(window)
