@@ -2,26 +2,28 @@ import tkinter as tk
 from tkinter import messagebox
 import csv
 import os
+import galang_dana
+from PIL import ImageTk, Image
 
-# Nama file CSV
 campaigns_file = 'campaigns.csv'
 donations_file = 'donations.csv'
-
-# Kode pembayaran berdasarkan metode pembayaran
 payment_codes = {
     'E-Money': {
         'ShopeePay': '0031',
         'GoPay': '0032',
-        'OVO': '0033'
+        'OVO': '0033',
+        'Dana': '0034'
     },
     'Transfer Bank': {
         'BCA': '771',
         'BRI': '991',
-        'Mandiri': '551'
+        'Mandiri': '551',
+        'BNI': '661',
+        'BSI': '881',
+        'Panin': '441'
     }
 }
 
-# Fungsi untuk membaca kampanye dari file CSV
 def read_campaigns():
     campaigns = []
     if os.path.exists(campaigns_file):
@@ -30,7 +32,6 @@ def read_campaigns():
             campaigns = list(reader)
     return campaigns
 
-# Fungsi untuk menulis donasi ke file CSV
 def write_donation(campaign, amount, method, code):
     is_new_file = not os.path.exists(donations_file)
     with open(donations_file, mode='a', newline='') as file:
@@ -39,111 +40,109 @@ def write_donation(campaign, amount, method, code):
             writer.writerow(['campaign', 'amount', 'method', 'code'])
         writer.writerow([campaign, amount, method, code])
 
-# Fungsi untuk membersihkan layar
-def clear_screen():
+def clear_screen(window):
     for widget in window.winfo_children():
         widget.destroy()
 
-# Fungsi untuk menampilkan halaman donasi
-def show_donation_page():
-    clear_screen()
+def show_donation_page(window):
+    clear_screen(window)
     tk.Label(window, text="Halaman Donasi").pack()
-    tk.Button(window, text="Pilih Kampanye", command=show_campaign_page).pack()
-    tk.Button(window, text="Kembali", command=show_home_page).pack()
+    tk.Button(window, text="Pilih Kampanye", command=lambda: show_campaign_page(window)).pack()
+    tk.Button(window, text="Kembali ke Beranda", command=lambda: show_main_page(window)).pack()
 
-# Fungsi untuk menampilkan halaman kampanye
-def show_campaign_page():
-    clear_screen()
+def show_campaign_page(window):
+    clear_screen(window)
     tk.Label(window, text="Pilih Kampanye untuk Donasi").pack()
-    
-    # Membaca kampanye dari file CSV
     campaigns = read_campaigns()
-    
     for campaign in campaigns:
         campaign_name = campaign['title']
-        tk.Button(window, text=campaign_name, command=lambda c=campaign_name: check_campaign_availability(c)).pack()
+        campaign_image = campaign['image']
+        
+        frame = tk.Frame(window)
+        frame.pack(fill='x', padx=10, pady=5)
+        
+        img = Image.open(campaign_image)
+        img = img.resize((100, 100), Image.LANCZOS)
+        photo = ImageTk.PhotoImage(img)
+        
+        label = tk.Label(frame, image=photo)
+        label.image = photo  # Keep a reference to avoid garbage collection
+        label.pack(side='left')
+        
+        tk.Button(frame, text=campaign_name, command=lambda c=campaign_name: check_campaign_availability(window, c)).pack(side='left')
+        
+    tk.Button(window, text="Kembali", command=lambda: show_donation_page(window)).pack()
 
-    tk.Button(window, text="Kembali", command=show_donation_page).pack()
-
-# Fungsi untuk memeriksa ketersediaan kampanye
-def check_campaign_availability(campaign):
-    # Asumsi kampanye tersedia (karena dibaca dari CSV yang ada)
+def check_campaign_availability(window, campaign):
     campaign_available = True
-
     if campaign_available:
-        show_campaign_details(campaign)
+        show_campaign_details(window, campaign)
     else:
         messagebox.showerror("Kampanye", "Kampanye Tidak Tersedia")
-        show_campaign_page()
+        show_campaign_page(window)
 
-# Fungsi untuk menampilkan detail kampanye dan donasi
-def show_campaign_details(campaign):
-    clear_screen()
+def show_campaign_details(window, campaign):
+    clear_screen(window)
     tk.Label(window, text=f"Detail {campaign}").pack()
     tk.Label(window, text="Masukkan Jumlah Donasi:").pack()
     amount_entry = tk.Entry(window)
     amount_entry.pack()
+    tk.Button(window, text="Konfirmasi Donasi", command=lambda: confirm_donation(window, campaign, amount_entry.get())).pack()
+    tk.Button(window, text="Kembali", command=lambda: show_campaign_page(window)).pack()
 
-    tk.Button(window, text="Konfirmasi Donasi", command=lambda: confirm_donation(campaign, amount_entry.get())).pack()
-    tk.Button(window, text="Kembali", command=show_campaign_page).pack()
-
-# Fungsi untuk mengkonfirmasi donasi
-def confirm_donation(campaign, amount):
-    clear_screen()
+def confirm_donation(window, campaign, amount):
+    clear_screen(window)
     tk.Label(window, text=f"Konfirmasi Donasi untuk {campaign}").pack()
     tk.Label(window, text=f"Jumlah Donasi: {amount}").pack()
-    
-    tk.Button(window, text="Proses Pembayaran", command=lambda: process_payment(campaign, amount)).pack()
-    tk.Button(window, text="Kembali", command=lambda: show_campaign_details(campaign)).pack()
+    tk.Button(window, text="Proses Pembayaran", command=lambda: process_payment(window, campaign, amount)).pack()
+    tk.Button(window, text="Kembali", command=lambda: show_campaign_details(window, campaign)).pack()
 
-# Fungsi untuk memproses pembayaran
-def process_payment(campaign, amount):
-    clear_screen()
+def process_payment(window, campaign, amount):
+    clear_screen(window)
     tk.Label(window, text=f"Proses Pembayaran untuk {campaign}").pack()
     tk.Label(window, text="Pilih Metode Pembayaran:").pack()
-    
-    tk.Button(window, text="E-Money", command=lambda: choose_emoney(campaign, amount)).pack()
-    tk.Button(window, text="Transfer Bank", command=lambda: choose_bank_transfer(campaign, amount)).pack()
-    tk.Button(window, text="Kembali", command=lambda: confirm_donation(campaign, amount)).pack()
+    tk.Button(window, text="E-Money", command=lambda: choose_emoney(window, campaign, amount)).pack()
+    tk.Button(window, text="Transfer Bank", command=lambda: choose_bank_transfer(window, campaign, amount)).pack()
+    tk.Button(window, text="Kembali", command=lambda: confirm_donation(window, campaign, amount)).pack()
 
-# Fungsi untuk memilih metode E-Money
-def choose_emoney(campaign, amount):
-    clear_screen()
+def choose_emoney(window, campaign, amount):
+    clear_screen(window)
     tk.Label(window, text="Pilih E-Money").pack()
-    tk.Button(window, text="ShopeePay", command=lambda: payment_success(campaign, amount, "ShopeePay", payment_codes['E-Money']['ShopeePay'])).pack()
-    tk.Button(window, text="GoPay", command=lambda: payment_success(campaign, amount, "GoPay", payment_codes['E-Money']['GoPay'])).pack()
-    tk.Button(window, text="OVO", command=lambda: payment_success(campaign, amount, "OVO", payment_codes['E-Money']['OVO'])).pack()
-    tk.Button(window, text="Kembali", command=lambda: process_payment(campaign, amount)).pack()
+    tk.Button(window, text="ShopeePay", command=lambda: payment_success(window, campaign, amount, "ShopeePay", payment_codes['E-Money']['ShopeePay'])).pack()
+    tk.Button(window, text="GoPay", command=lambda: payment_success(window, campaign, amount, "GoPay", payment_codes['E-Money']['GoPay'])).pack()
+    tk.Button(window, text="OVO", command=lambda: payment_success(window, campaign, amount, "OVO", payment_codes['E-Money']['OVO'])).pack()
+    tk.Button(window, text="Dana", command=lambda: payment_success(window, campaign, amount, "Dana", payment_codes['E-Money']['Dana'])).pack()
+    tk.Button(window, text="Kembali", command=lambda: process_payment(window, campaign, amount)).pack()
 
-# Fungsi untuk memilih metode Transfer Bank
-def choose_bank_transfer(campaign, amount):
-    clear_screen()
+def choose_bank_transfer(window, campaign, amount):
+    clear_screen(window)
     tk.Label(window, text="Pilih Bank").pack()
-    tk.Button(window, text="BCA", command=lambda: payment_success(campaign, amount, "BCA", payment_codes['Transfer Bank']['BCA'])).pack()
-    tk.Button(window, text="BRI", command=lambda: payment_success(campaign, amount, "BRI", payment_codes['Transfer Bank']['BRI'])).pack()
-    tk.Button(window, text="Mandiri", command=lambda: payment_success(campaign, amount, "Mandiri", payment_codes['Transfer Bank']['Mandiri'])).pack()
-    tk.Button(window, text="Kembali", command=lambda: process_payment(campaign, amount)).pack()
+    tk.Button(window, text="BCA", command=lambda: payment_success(window, campaign, amount, "BCA", payment_codes['Transfer Bank']['BCA'])).pack()
+    tk.Button(window, text="BRI", command=lambda: payment_success(window, campaign, amount, "BRI", payment_codes['Transfer Bank']['BRI'])).pack()
+    tk.Button(window, text="Mandiri", command=lambda: payment_success(window, campaign, amount, "Mandiri", payment_codes['Transfer Bank']['Mandiri'])).pack()
+    tk.Button(window, text="BNI", command=lambda: payment_success(window, campaign, amount, "BNI", payment_codes['Transfer Bank']['BNI'])).pack()
+    tk.Button(window, text="BSI", command=lambda: payment_success(window, campaign, amount, "BSI", payment_codes['Transfer Bank']['BSI'])).pack()
+    tk.Button(window, text="Panin", command=lambda: payment_success(window, campaign, amount, "Panin", payment_codes['Transfer Bank']['Panin'])).pack()
+    tk.Button(window, text="Kembali", command=lambda: process_payment(window, campaign, amount)).pack()
 
-# Fungsi untuk menampilkan sukses donasi
-def payment_success(campaign, amount, method, code):
-    clear_screen()
+def payment_success(window, campaign, amount, method, code):
+    clear_screen(window)
     write_donation(campaign, amount, method, code)
     tk.Label(window, text="Donasi Telah Berhasil").pack()
     tk.Label(window, text=f"Donasi ke {campaign} sebesar {amount} menggunakan {method} berhasil.").pack()
     tk.Label(window, text=f"Kode Pembayaran: {code}").pack()
-    tk.Button(window, text="Kembali ke Beranda", command=show_home_page).pack()
+    tk.Button(window, text="Kembali ke Beranda", command=lambda: show_main_page(window)).pack()
 
-# Fungsi untuk menampilkan halaman beranda
-def show_home_page():
-    clear_screen()
-    tk.Label(window, text="Selamat Datang di Beranda!").pack()
-    tk.Button(window, text="Donasi", command=show_donation_page).pack()
-    tk.Button(window, text="Keluar", command=window.quit).pack()
+def show_main_page(window):
+    clear_screen(window)
+    tk.Label(window, text="Selamat Datang di Sistem Donasi WeCann").pack()
+    tk.Button(window, text="Donasi", command=lambda: show_donation_page(window)).pack()
+    tk.Button(window, text="Galang Dana", command=lambda: galang_dana.show_fundraising_page(window)).pack()
 
-# Main program
-window = tk.Tk()
-window.title("Sistem Donasi WeCann")
+if __name__ == "__main__":
+    window = tk.Tk()
+    window.title("Sistem Donasi WeCann")
 
-show_home_page()
+    show_main_page(window)
 
-window.mainloop()
+    window.mainloop()
