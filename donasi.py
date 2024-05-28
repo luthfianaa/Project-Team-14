@@ -56,18 +56,18 @@ def show_campaign_page(window):
     campaigns = read_campaigns()
     for campaign in campaigns:
         campaign_name = campaign['title']
-        campaign_image = campaign['image']
+        #campaign_image = campaign['image']
         
         frame = tk.Frame(window)
         frame.pack(fill='x', padx=10, pady=5)
         
-        img = Image.open(campaign_image)
-        img = img.resize((100, 100), Image.LANCZOS)
-        photo = ImageTk.PhotoImage(img)
+        #img = Image.open(campaign_image)
+        #img = img.resize((100, 100), Image.LANCZOS)
+        #photo = ImageTk.PhotoImage(img)
         
-        label = tk.Label(frame, image=photo)
-        label.image = photo  # Keep a reference to avoid garbage collection
-        label.pack(side='left')
+        #label = tk.Label(frame, image=photo)
+        #label.image = photo  # Keep a reference to avoid garbage collection
+        #label.pack(side='left')
 
         tk.Button(frame, text=campaign_name, command=lambda c=campaign_name: check_campaign_availability(window, c)).pack(side='left')
     tk.Button(window, text="Kembali", command=lambda: show_donation_page(window)).pack()
