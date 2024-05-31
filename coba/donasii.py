@@ -1,5 +1,6 @@
 import customtkinter as ctk
 from tkinter import messagebox, ttk
+import tkinter as tk
 from PIL import Image, ImageTk
 import csv
 import os
@@ -96,18 +97,6 @@ class DonationApp(ctk.CTk):
         app1 = SlideShowApp(self.username)
         app1.mainloop()
 
-    def update_progressbar(self):
-        total_donations_by_titles = calculate_total_donations_by_titles()
-        selected_campaign = self.campaign_entry.get()
-        if selected_campaign in total_donations_by_titles:
-            total_donation = total_donations_by_titles[selected_campaign]
-            target_donation = read_target_donation(selected_campaign)  # Ambil target donasi dari kampanye yang dipilih
-            percentage = min(100, (total_donation / target_donation) * 100) if target_donation != 0 else 0  # Hitung persentase relatif terhadap target_donation
-            self.progressbar["value"] = percentage
-            self.progressbar.update()
-        else:
-            self.progressbar["value"] = 0
-
 
     def __init__(self, username):
         super().__init__()
@@ -173,12 +162,11 @@ class DonationApp(ctk.CTk):
         self.box_heart_label = ctk.CTkLabel(self.bottom_left_frame, image=self.box_heart_image, text=" ")
         self.box_heart_label.place(relx=0.79, rely=0.22)
 
+        self.progress_var = tk.IntVar()
+
         # Create image label for the right frame (initially empty)
         self.image_label = ctk.CTkLabel(self.right_frame, text=" ")
         self.image_label.place(relx=0.05, rely=0.05)
-
-        self.progressbar = ttk.Progressbar(self.right_frame, orient="horizontal", length=200, mode="determinate")
-        self.progressbar.place(relx=0.05, rely=0.95)
 
         # Create title label for the right frame (initially empty)
         self.title_label = ctk.CTkLabel(self.right_frame, text=" ", font=("Arial", 20, "bold"), text_color="#333333")
@@ -192,7 +180,10 @@ class DonationApp(ctk.CTk):
         self.total_donation_label = ctk.CTkLabel(self.right_frame, text="Total Donasi: ", font=("Arial", 14), text_color="#333333")
         self.total_donation_label.place(relx=0.05, rely=0.90)
 
-        self.update_progressbar()
+        self.progress_label = ttk.Label(self.right_frame, text="0%")
+        self.progress_label.place(relx=0.2, rely=0.95)
+
+        
         self.update_total_donation()
 
     def update_total_donation(self):
@@ -226,9 +217,17 @@ class DonationApp(ctk.CTk):
                 self.image_photo = ImageTk.PhotoImage(image)
                 self.image_label.configure(image=self.image_photo)
             except FileNotFoundError:
-                self.image_label.configure(text="Image not found")
+                self.image_label.configure(text=" ")
         else:
             self.image_label.configure(text="No image path provided")
+
+        total_donation = calculate_total_donation_by_title(campaign['title'])
+        target_donation = float(campaign['target'])
+        progress = (total_donation / target_donation) * 100 if target_donation > 0 else 0
+
+        self.progress_var.set(progress / 10)
+        self.progress_label.configure(text=f"{progress:.2f}%")
+        self.total_donation_label.configure(text=f"Total Donasi: {total_donation}")
 
     def show_bayar(self):
         selected_campaign = self.campaign_entry.get()
